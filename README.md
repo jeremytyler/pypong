@@ -1,2 +1,2 @@
 # pypong
-A PyGame Implementation of Pong
+A PyGame Implementation of Pong.
