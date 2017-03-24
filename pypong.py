@@ -2,18 +2,47 @@
 import sys
 import pygame
 
-SIZE = WIDTH, HEIGHT = (500, 480)
+# Constants
+WIDTH, HEIGHT = (500, 480)
+WHITE = (255, 255, 255)
 PADDLE_BUFFER = 30
+MAX_FPS = 60
 
-screen = pygame.display.set_mode(SIZE)
+
+class Paddle(pygame.sprite.Sprite):
+    """Paddle sprite definition."""
+
+    def __init__(self):
+        """Basic no-parameter constructor."""
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface([7, 36])
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+
+
+class Ball(pygame.sprite.Sprite):
+    """Ball sprite definition."""
+
+    speed = [2, 2]
+
+    def __init__(self):
+        """Basic no-parameter constructor."""
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.Surface([7, 9])
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+
+
+clock = pygame.time.Clock()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Sprite creation
-paddle_img = pygame.image.load("img/paddle.png")
-ball_img = pygame.image.load("img/ball.png")
+paddle_sprite = Paddle()
+ball_sprite = Ball()
 
-left_paddle = paddle_img.get_rect()
+left_paddle = paddle_sprite.image.get_rect()
 right_paddle = left_paddle.copy()
-ball = ball_img.get_rect()
+ball = ball_sprite.image.get_rect()
 
 # Initial positioning
 left_paddle.y = right_paddle.y = HEIGHT/2
@@ -25,12 +54,21 @@ ball.y = HEIGHT/2
 
 # Main Game Loop
 while True:
+    clock.tick(MAX_FPS)
+    print clock.get_fps()
     for event in pygame.event.get():
-        print pygame.event.event_name(event.type)
         if event.type == pygame.QUIT:
             sys.exit()
     screen.fill((0, 0, 0))
-    screen.blit(ball_img, ball)
-    screen.blit(paddle_img, left_paddle)
-    screen.blit(paddle_img, right_paddle)
+
+    # Should isloate this logic to the ball sprite in a "move" method
+    ball = ball.move(ball_sprite.speed)
+    if ball.left < 0 or ball.right > WIDTH:
+        ball_sprite.speed[0] = -ball_sprite.speed[0]
+    if ball.top < 0 or ball.bottom > HEIGHT:
+        ball_sprite.speed[1] = -ball_sprite.speed[1]
+
+    screen.blit(ball_sprite.image, ball)
+    screen.blit(paddle_sprite.image, left_paddle)
+    screen.blit(paddle_sprite.image, right_paddle)
     pygame.display.flip()
