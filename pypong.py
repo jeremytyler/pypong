@@ -33,6 +33,19 @@ class Ball(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
 
 
+def draw_net():
+    """
+    Method to draw the dashed "net" in the middle of the screen.
+
+    Ideally find a more efficient way to update each game loop
+    """
+    current_y = 0
+    while current_y < HEIGHT:
+        pygame.draw.line(
+            screen, WHITE, (WIDTH/2, current_y), (WIDTH/2, current_y+9))
+        current_y += 18
+
+
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
@@ -55,11 +68,11 @@ ball.y = HEIGHT/2
 # Main Game Loop
 while True:
     clock.tick(MAX_FPS)
-    print clock.get_fps()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
     screen.fill((0, 0, 0))
+    draw_net()
 
     # Should isloate this logic to the ball sprite in a "move" method
     ball = ball.move(ball_sprite.speed)
