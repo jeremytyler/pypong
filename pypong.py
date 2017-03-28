@@ -24,6 +24,7 @@ class Paddle(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = start_x
         self.rect.y = start_y
+        self.score = 0
 
     def update(self, screen):
         """Update and draw the paddle position."""
@@ -57,6 +58,7 @@ class Ball(pygame.sprite.Sprite):
         self.rect.y = start_y
         # TODO -isolate sound logic better
         self.rebound_sound = pygame.mixer.Sound('sound/rebound.ogg')
+        self.bounce_sound = pygame.mixer.Sound('sound/bounce.ogg')
         self.point_sound = pygame.mixer.Sound('sound/point.ogg')
 
     def update(self, screen):
@@ -67,6 +69,7 @@ class Ball(pygame.sprite.Sprite):
             self.rect.x = WIDTH/2
             self.rect.y = HEIGHT/2
         if self.rect.top < 0 or self.rect.bottom > HEIGHT:
+            self.bounce_sound.play()
             self.speed[1] = -self.speed[1]
 
         screen.blit(self.image, self.rect)
@@ -111,6 +114,12 @@ def draw_net():
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.mixer.init(48000, -16, 2, 2048)
+pygame.font.init()
+SCORE_FONT = pygame.font.Font('font/ObelusCompact.ttf', 200)
+score_surface = SCORE_FONT.render('10', False, WHITE)
+
+player_score = 0
+computer_score = 0
 
 # Sprite creation
 paddle_left = Paddle(PADDLE_BUFFER_X, HEIGHT/2)
@@ -134,4 +143,6 @@ while True:
     ball.update(screen)
     paddle_left.update(screen)
     paddle_right.update(screen)
+    screen.blit(score_surface, (WIDTH-106, - 46))
+    screen.blit(score_surface, (WIDTH/5, - 46))
     pygame.display.flip()
