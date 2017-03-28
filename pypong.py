@@ -12,12 +12,19 @@ MAX_FPS = 60
 class Paddle(pygame.sprite.Sprite):
     """Paddle sprite definition."""
 
-    def __init__(self):
-        """Basic no-parameter constructor."""
+    def __init__(self, start_x, start_y):
+        """Constructor with starting x,y coordinates."""
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([7, 36])
         self.image.fill(WHITE)
         self.rect = self.image.get_rect()
+        self.rect.x = start_x
+        self.rect.y = start_y
+
+    def update(self, screen):
+        """Update and draw the paddle position."""
+        screen.blit(self.image, self.rect)
+        screen.blit(self.image, self.rect)
 
 
 class Ball(pygame.sprite.Sprite):
@@ -25,12 +32,23 @@ class Ball(pygame.sprite.Sprite):
 
     speed = [2, 2]
 
-    def __init__(self):
-        """Basic no-parameter constructor."""
+    def __init__(self, start_x, start_y):
+        """Construction with starting x, y coordinates."""
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([7, 9])
         self.image.fill(WHITE)
         self.rect = self.image.get_rect()
+        self.rect.x = start_x
+        self.rect.y = start_y
+
+    def update(self, screen):
+        """Update and draw the ball position."""
+        self.rect = self.rect.move(self.speed)
+        if self.rect.left < 0 or self.rect.right > WIDTH:
+            self.speed[0] = -self.speed[0]
+        if self.rect.top < 0 or self.rect.bottom > HEIGHT:
+            self.speed[1] = -self.speed[1]
+        screen.blit(self.image, self.rect)
 
 
 def draw_net():
@@ -50,20 +68,9 @@ clock = pygame.time.Clock()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 # Sprite creation
-paddle_sprite = Paddle()
-ball_sprite = Ball()
-
-left_paddle = paddle_sprite.image.get_rect()
-right_paddle = left_paddle.copy()
-ball = ball_sprite.image.get_rect()
-
-# Initial positioning
-left_paddle.y = right_paddle.y = HEIGHT/2
-left_paddle.x = PADDLE_BUFFER
-right_paddle.x = WIDTH - PADDLE_BUFFER
-
-ball.x = WIDTH/2
-ball.y = HEIGHT/2
+paddle_left = Paddle(PADDLE_BUFFER, HEIGHT/2)
+paddle_right = Paddle(WIDTH - PADDLE_BUFFER, HEIGHT/2)
+ball = Ball(WIDTH/2, HEIGHT/2)
 
 # Main Game Loop
 while True:
@@ -74,14 +81,7 @@ while True:
     screen.fill((0, 0, 0))
     draw_net()
 
-    # Should isloate this logic to the ball sprite in a "move" method
-    ball = ball.move(ball_sprite.speed)
-    if ball.left < 0 or ball.right > WIDTH:
-        ball_sprite.speed[0] = -ball_sprite.speed[0]
-    if ball.top < 0 or ball.bottom > HEIGHT:
-        ball_sprite.speed[1] = -ball_sprite.speed[1]
-
-    screen.blit(ball_sprite.image, ball)
-    screen.blit(paddle_sprite.image, left_paddle)
-    screen.blit(paddle_sprite.image, right_paddle)
+    ball.update(screen)
+    paddle_left.update(screen)
+    paddle_right.update(screen)
     pygame.display.flip()
