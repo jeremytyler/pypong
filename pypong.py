@@ -133,18 +133,14 @@ rebound_sound = pygame.mixer.Sound('sound/rebound.ogg')
 bounce_sound = pygame.mixer.Sound('sound/bounce.ogg')
 point_sound = pygame.mixer.Sound('sound/point.ogg')
 
-pygame.font.init()
-SCORE_FONT = pygame.font.Font('font/ObelusCompact.ttf', 200)
-score_surface = SCORE_FONT.render('10', False, WHITE)
-
-player_score = 0
-computer_score = 0
-
 # Sprite creation
 paddle_left = Paddle((PADDLE_BUFFER_X, HEIGHT/2))
 paddle_right = Paddle((WIDTH - PADDLE_BUFFER_X, HEIGHT/2))
 ball = Ball((WIDTH/2, HEIGHT/2))
 
+# Scoring text
+pygame.font.init()
+SCORE_FONT = pygame.font.Font('font/ObelusCompact.ttf', 200)
 left_player_score = SCORE_FONT.render(str(paddle_left.score), False, WHITE)
 right_player_score = SCORE_FONT.render(str(paddle_right.score), False, WHITE)
 
