@@ -6,7 +6,6 @@ from display import score
 
 # Game-scope Constants
 WIDTH, HEIGHT = (500, 480)
-WHITE = (255, 255, 255)
 MAX_FPS = 60
 PADDLE_BUFFER_X = 30
 
