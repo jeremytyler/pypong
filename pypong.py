@@ -3,7 +3,7 @@ import sys
 import random
 import pygame
 
-# Constants
+# Game-scope Constants
 WIDTH, HEIGHT = (500, 480)
 WHITE = (255, 255, 255)
 MAX_FPS = 60
@@ -14,28 +14,31 @@ PADDLE_BUFFER_Y = 27
 class Paddle(pygame.sprite.Sprite):
     """Paddle sprite definition."""
 
-    PADDLE_SPEED = 5
-
-    def __init__(self, start_x, start_y):
+    def __init__(self, start_coords, score=0, speed=5):
         """Constructor with starting x,y coordinates."""
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([7, 36])
         self.image.fill(WHITE)
         self.rect = self.image.get_rect()
-        self.rect.x = start_x
-        self.rect.y = start_y
+        self.rect.x = start_coords[0]
+        self.rect.y = start_coords[1]
         self.score = 0
+        self.speed = 5
+
+    def add_point(self):
+        """Increase the paddle/player's score by 1."""
+        self.score += 1
 
     def update(self, screen):
         """Update and draw the paddle position."""
         if (pygame.key.get_pressed()[pygame.K_UP] != 0
                 and self.rect.y > 0 + PADDLE_BUFFER_Y):
-            self.rect.y -= self.PADDLE_SPEED
+            self.rect.y -= self.speed
         elif (pygame.key.get_pressed()[pygame.K_DOWN] != 0
                 and self.rect.y < HEIGHT
                 - self.rect.height
                 - PADDLE_BUFFER_Y):
-            self.rect.y += self.PADDLE_SPEED
+            self.rect.y += self.speed
 
         screen.blit(self.image, self.rect)
         screen.blit(self.image, self.rect)
@@ -44,45 +47,34 @@ class Paddle(pygame.sprite.Sprite):
 class Ball(pygame.sprite.Sprite):
     """Ball sprite definition."""
 
-    SPEEDS = (2, 4, 6)
-    speed = [SPEEDS[1], SPEEDS[1]]
+    speeds = (2, 4, 6)
 
-    def __init__(self, start_x, start_y):
+    def __init__(self, start_coords, speed=[speeds[1], speeds[1]]):
         """Construction with starting x, y coordinates."""
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.Surface([7, 9])
         self.image.fill(WHITE)
         self.rect = self.image.get_rect()
-        self.start_x = start_x
-        self.rect.x = start_x
-        self.rect.y = start_y
-        # TODO -isolate sound logic better
-        self.rebound_sound = pygame.mixer.Sound('sound/rebound.ogg')
-        self.bounce_sound = pygame.mixer.Sound('sound/bounce.ogg')
-        self.point_sound = pygame.mixer.Sound('sound/point.ogg')
+        self.rect.x = start_coords[0]
+        self.rect.y = start_coords[1]
+        self.speed = speed
 
     def update(self, screen):
         """Update and draw the ball position."""
         self.rect = self.rect.move(self.speed)
-        if self.rect.left < 0 or self.rect.right > WIDTH:
-            self.point_sound.play()
-            self.rect.x = WIDTH/2
-            self.rect.y = HEIGHT/2
-        if self.rect.top < 0 or self.rect.bottom > HEIGHT:
-            self.bounce_sound.play()
-            self.speed[1] = -self.speed[1]
-
         screen.blit(self.image, self.rect)
 
-    def rebound(self, paddle_edge):
+    def bounce_from_edge(self):
+        """Method to change y velocity if ball hits edge of the play area."""
+        self.speed[1] = -self.speed[1]
+
+    def bounce_from_paddle(self, paddle_front_edge_x):
         """Change the ball direction and speed when paadle collision occurs."""
-        self.rebound_sound.play()
-
         # Prevent the ball from being "stuck" in the paddle.
-        self.rect.x = paddle_edge
+        self.rect.x = paddle_front_edge_x
 
-        new_speed_x = self.SPEEDS[random.randrange(0, len(self.SPEEDS))]
-        new_speed_y = (self.SPEEDS[random.randrange(0, len(self.SPEEDS))]
+        new_speed_x = self.speeds[random.randrange(0, len(self.speeds))]
+        new_speed_y = (self.speeds[random.randrange(0, len(self.speeds))]
                        * random.randrange(-1, 2, 2))
 
         self.speed[0] = -self.speed[0]
@@ -95,6 +87,28 @@ class Ball(pygame.sprite.Sprite):
             self.speed[1] = new_speed_y
         else:
             self.speed[1] = -new_speed_y
+
+    def is_at_edge(self, play_area_height):
+        """Test to determine if ball has his edge of play area."""
+        return self.rect.top < 0 or self.rect.bottom > play_area_height
+
+    def is_left_score(self, left_x):
+        """Test if ball passed the left side of the screen."""
+        return self.rect.left < left_x
+
+    def is_right_score(self, right_x):
+        """Test if ball passed the left side of the screen."""
+        return self.rect.right > right_x
+
+    def reset(self):
+        """Reset the ball after a score occurs."""
+        self.rect.x = WIDTH/2
+        self.rect.y = HEIGHT/2
+        new_speed_x = (self.speeds[random.randrange(0, len(self.speeds))]
+                       * random.randrange(-1, 2, 2))
+        new_speed_y = (self.speeds[random.randrange(0, len(self.speeds))]
+                       * random.randrange(-1, 2, 2))
+        self.speed = [new_speed_x, new_speed_y]
 
 
 def draw_net():
@@ -113,7 +127,12 @@ def draw_net():
 # Game tech initialization
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
 pygame.mixer.init(48000, -16, 2, 2048)
+rebound_sound = pygame.mixer.Sound('sound/rebound.ogg')
+bounce_sound = pygame.mixer.Sound('sound/bounce.ogg')
+point_sound = pygame.mixer.Sound('sound/point.ogg')
+
 pygame.font.init()
 SCORE_FONT = pygame.font.Font('font/ObelusCompact.ttf', 200)
 score_surface = SCORE_FONT.render('10', False, WHITE)
@@ -122,9 +141,12 @@ player_score = 0
 computer_score = 0
 
 # Sprite creation
-paddle_left = Paddle(PADDLE_BUFFER_X, HEIGHT/2)
-paddle_right = Paddle(WIDTH - PADDLE_BUFFER_X, HEIGHT/2)
-ball = Ball(WIDTH/2, HEIGHT/2)
+paddle_left = Paddle((PADDLE_BUFFER_X, HEIGHT/2))
+paddle_right = Paddle((WIDTH - PADDLE_BUFFER_X, HEIGHT/2))
+ball = Ball((WIDTH/2, HEIGHT/2))
+
+left_player_score = SCORE_FONT.render(str(paddle_left.score), False, WHITE)
+right_player_score = SCORE_FONT.render(str(paddle_right.score), False, WHITE)
 
 # Main Game Loop
 while True:
@@ -132,17 +154,41 @@ while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
+
+    # Draw background
     screen.fill((0, 0, 0))
     draw_net()
 
+    # Ball logic
+    if ball.is_at_edge(HEIGHT):
+        bounce_sound.play()
+        ball.bounce_from_edge()
+
+    if ball.is_left_score(0):
+        point_sound.play()
+        paddle_left.add_point()
+        left_player_score = SCORE_FONT.render(str(paddle_left.score),
+                                              False, WHITE)
+        ball.reset()
+    elif ball.is_right_score(WIDTH):
+        point_sound.play()
+        paddle_right.add_point()
+        right_player_score = SCORE_FONT.render(str(paddle_right.score),
+                                               False, WHITE)
+        ball.reset()
+
+    # Paddle logic
     if pygame.sprite.collide_rect(ball, paddle_left):
-        ball.rebound(paddle_left.rect.right)
+        rebound_sound.play()
+        ball.bounce_from_paddle(paddle_left.rect.right)
     if pygame.sprite.collide_rect(ball, paddle_right):
-        ball.rebound(paddle_right.rect.left - 7)
+        rebound_sound.play()
+        ball.bounce_from_paddle(paddle_right.rect.left - 7)
 
     ball.update(screen)
     paddle_left.update(screen)
     paddle_right.update(screen)
-    screen.blit(score_surface, (WIDTH-106, - 46))
-    screen.blit(score_surface, (WIDTH/5, - 46))
+
+    screen.blit(left_player_score, (WIDTH-106, - 46))
+    screen.blit(right_player_score, (WIDTH/5, - 46))
     pygame.display.flip()
