@@ -1,6 +1,7 @@
 """Class which represents the ball in play."""
 import pygame
 from random import randrange
+from audio import sounds
 
 
 class Ball(pygame.sprite.Sprite):
@@ -19,14 +20,6 @@ class Ball(pygame.sprite.Sprite):
         self.rect.y = start_coords[1]
 
         self.speed = speed
-
-    def update(self, screen_dim):
-        """Update and draw the ball position."""
-        self.rect = self.rect.move(self.speed)
-
-    def bounce_from_edge(self):
-        """Method to change y velocity if ball hits edge of the play area."""
-        self.speed[1] = -self.speed[1]
 
     def bounce_from_paddle(self, paddle_front_edge_x):
         """Change the ball direction and speed when paadle collision occurs."""
@@ -48,10 +41,6 @@ class Ball(pygame.sprite.Sprite):
         else:
             self.speed[1] = -new_speed_y
 
-    def is_at_edge(self, play_area_height):
-        """Test to determine if ball has his edge of play area."""
-        return self.rect.top < 0 or self.rect.bottom > play_area_height
-
     def is_left_score(self, left_x):
         """Test if ball passed the left side of the screen."""
         return self.rect.left < left_x
@@ -69,3 +58,13 @@ class Ball(pygame.sprite.Sprite):
         new_speed_y = (self.speeds[randrange(0, len(self.speeds))]
                        * randrange(-1, 2, 2))
         self.speed = [new_speed_x, new_speed_y]
+
+    # TODO - Try to separate paddle from parameter
+    def update(self, screen_dim):
+        """Update and draw the ball position."""
+        self.rect = self.rect.move(self.speed)
+
+        # Bounce from the top/bottom edge
+        if self.rect.top < 0 or self.rect.bottom > screen_dim[1]:
+            sounds.BOUNCE.play()
+            self.speed[1] = -self.speed[1]
