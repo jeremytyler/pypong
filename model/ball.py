@@ -59,7 +59,6 @@ class Ball(pygame.sprite.Sprite):
                        * randrange(-1, 2, 2))
         self.speed = [new_speed_x, new_speed_y]
 
-    # TODO - Try to separate paddle from parameter
     def update(self, screen_dim):
         """Update and draw the ball position."""
         self.rect = self.rect.move(self.speed)

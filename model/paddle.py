@@ -38,7 +38,6 @@ class Paddle(pygame.sprite.Sprite):
         else:
             return self.rect.left - self.rect.width
 
-    # TODO - Try to separate ball from parameter
     def update(self, screen_dim):
         """Update and draw the paddle position."""
         if (pygame.key.get_pressed()[pygame.K_UP] != 0
